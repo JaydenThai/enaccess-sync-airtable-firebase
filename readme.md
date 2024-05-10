@@ -8,7 +8,7 @@ FIREBASE_SERVICE_ACCOUNT_PATH=
 FIREBASE_COLLECTION_NAME=places
 GOOGLE_MAPS_API_KEY=
 
-then install packages using npm or yarn, then run
+then install packages using npm or yarn (just type "yarn"), then run
 
 node ./transferData.js
 

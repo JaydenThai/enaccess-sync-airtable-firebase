@@ -6,6 +6,7 @@ const admin = require('firebase-admin');
 const { v4: uuidv4 } = require('uuid');
 const sharp = require('sharp');
 const { Readable } = require('stream');
+const readline = require('readline');
 const serviceAccount = require(process.env.FIREBASE_SERVICE_ACCOUNT_PATH);
 
 // Initialize Airtable
@@ -18,7 +19,7 @@ const tableName = process.env.AIRTABLE_TABLE_NAME;
 // Initialize Firebase
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
-  storageBucket: 'enaccessmaps-bcd54.appspot.com',
+  storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
 });
 const firestore = admin.firestore();
 const collectionName = process.env.FIREBASE_COLLECTION_NAME;
@@ -155,6 +156,38 @@ function transformResponse(response) {
   }
 }
 
+//function that waits for user input
+const waitForUserInput = async (message) => {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  return new Promise((resolve) => {
+    rl.question(message, () => {
+      rl.close();
+      resolve();
+    });
+  });
+};
+
+//get manual input
+const getManualInput = async (message) => {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  return new Promise((resolve) => {
+    rl.question(message, (answer) => {
+      rl.close();
+      resolve(answer);
+    });
+  });
+};
+
+
+
 // Function to transfer data from Airtable to Firebase
 const transferData = async () => {
     try {
@@ -172,14 +205,40 @@ const transferData = async () => {
           longitude: 0,
         };
   
-        const placeID = await fetchPlaceID(location, address);
-        const placeRating = record.get('Overall rating (out of 5)')
+        let placeID = await fetchPlaceID(location, address);
+        let placeRating = record.get('Overall rating (out of 5)')
+
+        // If placeID is not found, ask the user to enter it manually
+        console.log("for double checking name is:", record.get("Restaurant Name"));
+
+        /*if (!placeID) {
+          placeID = await getManualInput(
+            'Place ID not found. Please enter it manually: '
+          );
+        }*/
+        //skip record completely if Place ID not found
+        if (!placeID) {
+          console.log('Place ID not found. Skipping this place...');
+          continue;
+        }
+        
+
+
+        // If placeRating is not found, ask the user to enter it manually
+        var newplaceRating = 5;
+        console.log("for reference, comment is:", record.get("Other comment"))
+        // If placeRating is not found, set it to 5 automatically
+        // modified to automatically give 5 instead of getting input to check
+        if (placeRating === undefined) {
+          newplaceRating = 5;
+        }
   
-        if (placeID && (placeRating!= undefined)) {
+        if (placeID) {
 
           //Allocate 
 
           const photoAttachments = record.get("Any photos") || [];
+          console.log("ATTACHMENTS", photoAttachments)
 
           const photoObjects = await Promise.all(
             photoAttachments.map(async (attachment) => {
@@ -201,10 +260,9 @@ const transferData = async () => {
           );
 
           const review = {
-            userUid: "Legacy-Airtable",
-            userName: record.get('Mailing List - First Name') ? record.get('Mailing List - First Name') : "Anonymous",
-            rating: parseInt(record.get('Overall rating (out of 5)')),
-            placeId: placeID,
+            userUid: "6BGlA6AO35gWLwZ6TuAxiyzGQDp1",
+            userName: record.get('Mailing List - First Name') ?? "Legacy Review",
+            rating: record.get('Overall rating (out of 5)') ?? newplaceRating,
             stepsOnEntry: parseInt(record.get('Steps on Entry')) ?? 0,
             hasStableRamp: transformResponse(record.get('Stable ramp')),
             wcFitsTable: transformResponse(record.get('Table Access')),
@@ -213,22 +271,26 @@ const transferData = async () => {
             hasAccessibleParking: transformResponse(record.get('Accessible Parking')),
             hasOutdoorEating: transformResponse(record.get('Outdoor Eating')),
             comment: record.get('Other comment') ?? "",
-            createdAt: new Date(2021, 01),
+            createdAt: new Date(2021, 1),
             photos: photoObjects // Add photos from the Airtable record if needed
           };
           
-          
+          console.log("review set: ", iteratereview)
+          console.log(review)
+          /*await waitForUserInput(
+            'Press ENTER to submit the review to Firebase, or CTRL+C to exit...'
+          );*/
   
           const reviewsCollection = firestore.collection(collectionName).doc(placeID).collection("reviews");
           const newReviewDoc = reviewsCollection.doc();
-          batch.set(newReviewDoc, review);
-          console.log("review set: ", iteratereview)
-          console.log(review)
+          //batch.set(newReviewDoc, review);
+          await newReviewDoc.set(review);
+          
           iteratereview++
         }
       }
   
-      await batch.commit();
+      //await batch.commit();
       console.log('Data transferred successfully from Airtable to Firebase.');
     } catch (error) {
       console.error('Error transferring data:', error);

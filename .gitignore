@@ -1,0 +1,6 @@
+enaccess-prod-service-account.json
+enaccessmaps-bcd54-firebase-adminsdk-fp6kh-35966668cc.json
+.env
+package-lock.json
+node_modules/*
+.DS_STORE
