@@ -186,7 +186,39 @@ const getManualInput = async (message) => {
   });
 };
 
+const defaultTally = {
+  na: 0,
+  no: 0,
+  yes: 0,
+  unsure: 0
+}
 
+async function addPlace(placeId, placeName) {
+  firestore.collection('places').doc(placeId).set({
+    name: placeName,
+    address: "",
+    hash: "",
+    lat: 0,
+    lng: 0,
+    recentReviews: [],
+    accessibleParkingTally: defaultTally,
+    accessibleToiletTally: defaultTally,
+    movementSpaceTally: defaultTally,
+    outdoorEatingTally: defaultTally,
+    stableRampTally: defaultTally,
+    wcFitHeight: 0,
+    restaurantFeatures: {
+      accessibleParking: false,
+      accessibleToilet: false,
+      movementSpace: false,
+      outdoorEating: false,
+      seatingOptions: false,
+      stepFree: false
+    },
+    stepsPoll: defaultTally,
+    types: []
+  }, {merge: true})
+}
 
 // Function to transfer data from Airtable to Firebase
 const transferData = async () => {
@@ -207,9 +239,10 @@ const transferData = async () => {
   
         let placeID = await fetchPlaceID(location, address);
         let placeRating = record.get('Overall rating (out of 5)')
+        let placeName = record.get("Restaurant Name")
 
         // If placeID is not found, ask the user to enter it manually
-        console.log("for double checking name is:", record.get("Restaurant Name"));
+        console.log("for double checking name is:", placeName);
 
         /*if (!placeID) {
           placeID = await getManualInput(
@@ -234,6 +267,7 @@ const transferData = async () => {
         }
   
         if (placeID) {
+          addPlace(placeID, placeName)
 
           //Allocate 
 
