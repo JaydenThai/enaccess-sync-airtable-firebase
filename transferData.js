@@ -233,7 +233,8 @@ async function addPlace(placeId, placeName, lat, lng, types, address) {
           seatingOptions: false,
           stepFree: false,
         },
-        stepsPoll: defaultTally,
+        // stepsPoll: defaultTally,
+        stepsPoll: {},
         types: types,
       },
       { merge: true }
