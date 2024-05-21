@@ -225,14 +225,6 @@ async function addPlace(placeId, placeName, lat, lng, types, address) {
         movementSpaceTally: defaultTally,
         outdoorEatingTally: defaultTally,
         stableRampTally: defaultTally,
-        restaurantFeatures: {
-          accessibleParking: false,
-          accessibleToilet: false,
-          movementSpace: false,
-          outdoorEating: false,
-          seatingOptions: false,
-          stepFree: false,
-        },
         // stepsPoll: defaultTally,
         stepsPoll: {},
         types: types,
@@ -250,12 +242,13 @@ const transferData = async () => {
     const batch = firestore.batch();
 
     // test to make sure we dont spend 1 million of sabrinas dollars
-    const n = 3;
+    const n = 5;
     const shortRecords = records.slice(0, n);
 
     for (const record of records) {
       const address = record.get("Restaurant Address");
       const name = record.get("Restaurant Name");
+
 
       // res = {
       //   id: place.place_id,
@@ -290,12 +283,12 @@ const transferData = async () => {
       types = res.types;
 
       // If placeRating is not found, ask the user to enter it manually
-      var newplaceRating = 5;
+      var newplaceRating = 3;
       //console.log("for reference, comment is:", record.get("Other comment"))
       // If placeRating is not found, set it to 5 automatically
       // modified to automatically give 5 instead of getting input to check
       if (placeRating === undefined) {
-        newplaceRating = 5;
+        newplaceRating = 3;
       }
 
       if (placeID) {
